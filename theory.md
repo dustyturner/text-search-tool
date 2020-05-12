@@ -10,6 +10,8 @@ This document search tool was envisaged as a response to the issues faced by res
 
 The theoretical components of the search process adopted by this tool will be familiar to initiates of NLP. We start with the bedrock of pretty much all modern NLP - embeddings: 
 
+### embeddings
+
 An embedding is a numerical representation of a qualitative variable. In the context of NLP the variable will be a word or collection of words, but this can just as easily be a categorical value (like a color) or a picture, or a voice recording. The key feature of an embedding is that it captures the intrinsic information contained in a qualitative input and represents it numerically in a uniform output - a fixed length vector.
 
 As simple example, take the embedding of the words **King, Prince, Queen, Princess** as follows:
@@ -21,19 +23,37 @@ As simple example, take the embedding of the words **King, Prince, Queen, Prince
 
 Each word is represented by a two value vectorized encoding. In this example, the first dimension can be seen to encode the **masculinity / femininity** of the word, and the second dimension the seniority relationship **junior / senior** - the lower / higher values denoting the position of each word on these conceptual scales.
 
-In practice, embeddings do not usually demonstrate these clear relationships between the numeric values and qualitative concepts. The values are calculated by an algorithmic process aiming to quantify the commonalities of each word or item within your qualitative variable - this is often in the context of a supervised learning task, where a model will attempt to predict an output given a particular input. Items closely associated with one another (i.e. inputs closely associated with certain outputs) will share similar numerical values in their embeddings, those that share no association will show much greater differences. 
+In practice, embeddings do not usually demonstrate these clear relationships between the numeric values and qualitative concepts. The values are calculated by an algorithmic process aiming to quantify the commonalities of each word or item within your qualitative variable - this is often in the context of a supervised learning task, where a model will attempt to predict an output given a particular input. Items closely associated with one another in the context of the learning task (i.e. inputs closely associated with certain target outputs) will share similar numerical values in their embeddings, those that share no association will show much greater differences. 
 
-!!! TODO: EXPLAIN VECTOR COMPARISON !!!
+Armed with embeddings for our qualitative data, we can then make quantitative numerical comparisons between examples where this was not possible before. This leads us to our next key concept:
+
+### vector comparison
+
+Once we have a set of numerical embedding vectors, we can compare them using a number of techniques familar to anybody that has learned any co-ordinate geometry or multivariate calculus. The two most commonly used are euclidean distance and cosine similarity:
+
+* Euclidean distance:
+    The euclidean distance is the length of the line that can be drawn between the two co-ordinate points of our vectors. The more similar the values in each vector, the closer they will be together and the lower their euclidean distance will be. Simple!
+
+* Cosine Similarity:
+    The cosine similarity is the magnitude of the angle between our two vectors - effectively measuring the similarity of the direction they both point in. Much like with euclidean distance, the cosine similarity will be smaller the more similar the values in each vector are. Unlike euclidean distance, cosine similarity ignores the magnitude of each vector, and so both vectors can have very different values, and still have a very low cosine similarity provided they point in similar directions.
+
+The best choice depends on the particular use-case. Euclidean distance is very useful when the distribution of your variables is uniform or relatively normal in distribution - for example, comparing the similarity of rgb color values. Basically any apples-to-apples type comparison will usually be best calculated by euclidean distance.
+
+Cosine similarity is often better in situations where the magnitude of your vectors is less important. A perfect example is the context of this discussion - text (or multiple word) comparison. Often, we will see two statements with a very similar meaning, but with significantly different lengths i.e. one statement uses many more words than the other. Such statements may produce embeddings with very different magnitudes - the sentence with more words has much higher co-ordinate values than the other, as the additional words compound the embedding values. The individual words that define each statement, however, may be very similar and so the vectors point in very similar directions. Cosine similarity makes allowances for this phenomenon.
+
+It shouldn't come as a surprise that the cosine similarity will be used for this search method. But without any embeddings to compare we're not going to get very far. This leads us to the two embedding techniques that will be used in this search tool:
 
 * ### Bert:
 
-    Bert is a hugely powerful and versatile Natural Language Processing model. It has been trained on a gigantic corpus of text from Wikipedia and BooksCorpus, and is designed with application to a wide range of NLP tasks in mind. Unlike the majority of NLP solutions that came before it, bert shuns the dominant recurrent architectures in favour of a "bidirectional transformer network". Whereas recurrent neural networks (RNNs) (i.e. LSTMs and the like) encode a sequence one token at a time left -> right, bert uses a transformer network with "self-attention" layers to "attend" to the whole sequence at once, doing so each time it makes an output prediction.
+    Bert is a hugely powerful and versatile Natural Language Processing model. It has been trained on a gigantic corpus of text from Wikipedia and BooksCorpus, and has achieved state of the art results on a wide range of NLP benchmarks with little task-specific training. Not only can Bert accurately capture the meaning of individual words as they appear in a sentence, but also their meaning in the context of the other words around them i.e. the distinction between "I am happy not sad" and "I am sad not happy" - historically this has been a big pitfall for other les sophisticated models. 
+    
+    Unlike the majority of NLP solutions that came before it, bert shuns the dominant recurrent architectures in favour of a "bidirectional transformer network". Whereas recurrent neural networks (RNNs) (i.e. LSTMs and the like) encode a sequence one token at a time left -> right, bert uses a transformer network with "self-attention" layers to "attend" to the whole sequence at once, doing so each time it makes an output prediction.
     
     To paraphrase at a high level: 
     
-    RNN models encode and input one -> word -> at -> a -> time, in a path moving from one word to the next, and then decode this input one -> word -> at -> a -> time to make a prediction. When making inferences, if the prediction requires the model to look at the beginning of the input sentence, the model will have to look back along this path from output to the relevant input to find the information it needs. This is a long way for a signal to travel, meaning such networks struggle to "remember" certain information, like the context provided by words that are at a distance from one another in a sentence - i.e. the color of the dog in the sentence "*Peppa, my dog* and best friend in the whole wide world, is a *brown* terrier".
+    RNN models encode and input one -> word -> at -> a -> time, in a path moving from one word to the next, and then decode this input one -> word -> at -> a -> time to make a prediction. When making inferences, if the prediction requires the model to look at the beginning of the input sentence, the model will have to look back along this path from output to the relevant input to find the information it needs. This is a long way for a signal to travel, meaning such networks struggle to "remember" certain information, like the context provided by words that are at a distance from one another in a sentence. Take, for example, the color of the dog in the sentence "*Peppa, my dog* and best friend in the whole wide world, is a *brown* terrier" - the signal has to travel a long way between the words "dog" and "brown".
 
-    Bert avoids this issue by making use of Transformer modules. Transformers use a technique called the attention mechanism to allow a model to "focus" on a specific part of a sentence as required. Rather than inputting words one-by-one, the transformer model accepts the simultaneous input of every word along with an embedding that encodes their respective positions. The model then trains an "attention layer" that uses a set of key/value weightings that allow the model to "attend" to individual words from the input directly, without the signal having to travel through all of the following words to be decoded. 
+    Bert avoids this issue by making use of Transformer modules. Transformers use a technique called the attention mechanism to allow a model to "focus" on a specific part of a sentence as required. Rather than inputting words one-by-one, the transformer model accepts the simultaneous input of every word along with an embedding that encodes their respective positions. The model then trains an "attention layer" that uses a set of key/value weightings that allow the model to "attend" to individual words from the input directly, regardless of the distance between the words and without the signal having to travel through all of the following words to be decoded. 
     
     We can use the output of Bert's transformer layers as embeddings to quantify the meaning of input sequences. Given Bert's superior performance on an impressive range of NLP tasks, we can be confident the model is capturing a good deal of the "meaning" of the input text it is given.
 
