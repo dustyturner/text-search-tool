@@ -32,7 +32,7 @@ Armed with embeddings for our qualitative data, we can then make quantitative nu
 Once we have a set of numerical embedding vectors, we can compare them using a number of techniques familar to anybody that has learned any co-ordinate geometry or multivariate calculus. The two most commonly used are euclidean distance and cosine similarity:
 
 * Euclidean distance:
-    The euclidean distance is the length of the line that can be drawn between the two co-ordinate points of our vectors. The more similar the values in each vector, the closer they will be together and the lower their euclidean distance will be. Simple!
+    This is the length of the line that can be drawn between the two co-ordinate points of our vectors. The more similar the values in each vector, the closer they will be together and the lower their euclidean distance will be. Simple!
 
 * Cosine Similarity:
     The cosine similarity is the magnitude of the angle between our two vectors - effectively measuring the similarity of the direction they both point in. Much like with euclidean distance, the cosine similarity will be smaller the more similar the values in each vector are. Unlike euclidean distance, cosine similarity ignores the magnitude of each vector, and so both vectors can have very different values, and still have a very low cosine similarity provided they point in similar directions.
@@ -41,7 +41,7 @@ The best choice depends on the particular use-case. Euclidean distance is very u
 
 Cosine similarity is often better in situations where the magnitude of your vectors is less important. A perfect example is the context of this discussion - text (or multiple word) comparison. Often, we will see two statements with a very similar meaning, but with significantly different lengths i.e. one statement uses many more words than the other. Such statements may produce embeddings with very different magnitudes - the sentence with more words has much higher co-ordinate values than the other, as the additional words compound the embedding values. The individual words that define each statement, however, may be very similar and so the vectors point in very similar directions. Cosine similarity makes allowances for this phenomenon.
 
-It shouldn't come as a surprise that the cosine similarity will be used for this search method. But without any embeddings to compare we're not going to get very far. This leads us to the two embedding techniques that will be used in this search tool:
+It shouldn't come as a surprise that the cosine similarity will be used for this search method. But we have yet to establish how we will calculate our embeddings, without which we're not going to get very far. This leads us to the two embedding techniques that will be used in this search tool:
 
 * ### Bert:
 
@@ -49,13 +49,11 @@ It shouldn't come as a surprise that the cosine similarity will be used for this
     
     Unlike the majority of NLP solutions that came before it, bert shuns the dominant recurrent architectures in favour of a "bidirectional transformer network". Whereas recurrent neural networks (RNNs) (i.e. LSTMs and the like) encode a sequence one token at a time left -> right, bert uses a transformer network with "self-attention" layers to "attend" to the whole sequence at once, doing so each time it makes an output prediction.
     
-    To paraphrase at a high level: 
+    In an attempt to paraphrase at a high level: 
     
-    RNN models encode and input one -> word -> at -> a -> time, in a path moving from one word to the next, and then decode this input one -> word -> at -> a -> time to make a prediction. When making inferences, if the prediction requires the model to look at the beginning of the input sentence, the model will have to look back along this path from output to the relevant input to find the information it needs. This is a long way for a signal to travel, meaning such networks struggle to "remember" certain information, like the context provided by words that are at a distance from one another in a sentence. Take, for example, the color of the dog in the sentence "*Peppa, my dog* and best friend in the whole wide world, is a *brown* terrier" - the signal has to travel a long way between the words "dog" and "brown".
+    RNN models encode and input one -> word -> at -> a -> time, in a path moving from one word to the next, and then decode this input one -> word -> at -> a -> time to make a prediction. When making inferences, if the prediction requires the model to look at the beginning of the input sentence, the model will have to look back along this path from output to the relevant input to find the information it needs. This is a long way for a signal to travel, meaning such networks struggle to "remember" certain information, like the context provided by words that are at a distance from one another in a sentence. Take, for example, the color of the dog in the sentence "*Peppa, my dog* and best friend in the whole wide world, is a *brown* terrier" - the signal has to travel a long way between the words "dog" and "brown" to be interpreted by the decoder.
 
     Bert avoids this issue by making use of Transformer modules. Transformers use a technique called the attention mechanism to allow a model to "focus" on a specific part of a sentence as required. Rather than inputting words one-by-one, the transformer model accepts the simultaneous input of every word along with an embedding that encodes their respective positions. The model then trains an "attention layer" that uses a set of key/value weightings that allow the model to "attend" to individual words from the input directly, regardless of the distance between the words and without the signal having to travel through all of the following words to be decoded. 
-    
-    We can use the output of Bert's transformer layers as embeddings to quantify the meaning of input sequences. Given Bert's superior performance on an impressive range of NLP tasks, we can be confident the model is capturing a good deal of the "meaning" of the input text it is given.
 
 * ### TF-IDF vectors
 
@@ -79,12 +77,9 @@ It shouldn't come as a surprise that the cosine similarity will be used for this
 
     So the overall TF-IDF for the word "this" in the first sentence of our document is (2 / 11) * (3 / 2). In the wild, TF-IDF values are augmented with smoothing and normalisation techniques to make them more effective, so you are unlikely to see them calculated like this, but you get the idea.
 
-    By calculating a TF/IDF score for every unique word that appears over the whole corpus (group of documents), once for each document, we get a vectorized representation of the document's contents. This is referred to as a "sparse-vector" representation, as many of the words in the vocabulary (if it is large) will not appear in each document, and so the vectors will contain a large proportion of zero values. These TF-IDF vectors can be used in much the same way as the Bert vector embeddings to compare the similarity of different texts.
+    By calculating a TF/IDF score for every unique word that appears over whole corpus (group of documents) once for each document, we get a vectorized representation of the document's contents. This is referred to as a "sparse-vector" representation, as many of the words in the vocabulary (if it is large) will not appear in a given document, and so the vectors will contain a large proportion of zero values. These TF-IDF vectors can be used in much the same way as the Bert vector embeddings to compare the similarity of different texts.
 
-    Each 
-
-
-## Structure
+## Search Tool Recipe
 
 We can combine these two techniques for encoding written information to create a powerful search tool. The following is a step-by-step recipe for this approach:
 

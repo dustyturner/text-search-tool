@@ -31,9 +31,18 @@ class CovidSearchTool(TextSearchTool):
         
         abstracts_df.drop_duplicates(subset=['title','authors'], inplace=True)
 
-        # isolate texts (abstracts) and text_ids (cord_uids) and use super method from there
+        # isolate texts (abstracts) and text_ids (cord_uids) 
         text_ids = abstracts_df.cord_uid.values
-        texts = abstracts_df.abstract.values
+        texts = []
+        # prepend paper title to texts
+        for entry in abstracts_df.itertuples():
+            text = entry.title
+            if text[-1] != ".":
+                text += "."
+            text += " "
+            text += entry.abstract
+            texts.append(text)
+
         return texts, text_ids
 
     def fit(self, abstracts_df):
